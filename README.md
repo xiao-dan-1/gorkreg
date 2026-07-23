@@ -4,9 +4,10 @@
 **Python 包目录仍为 `grokreg/`**（import 名不变）；本仓库公开名 **gorkreg**。
 
 **日常：分步运维**（产号 → mint → probe/refresh → 按需 export/upload）。  
-密钥只放 **`.env`**，勿提交。细节见 [docs/开发手册.md](docs/开发手册.md)、分层见 [docs/架构债.md](docs/架构债.md)。
+密钥只放 **`.env`**，勿提交。CLI 与 `--help` 为准。
 
-> 本公开树 **不含** 本地 Web 控制台（GrokX / `client/`）。CLI 为唯一公开入口。
+> 本公开树 **不含**：Web 控制台（GrokX / `client/`）、详细运维文档（`docs/`）、对照开源切片（`ref/`）。  
+> 仅协议 CLI + 离线测试 + 样例配置。
 
 ---
 
@@ -88,7 +89,7 @@ python main.py --mint all --mint-missing --limit 4 --no-probe -j 1 --ascii-log
 
 # 3) 探活（读 auth.json，不依赖 pack 文件；单邮箱，勿逗号列表）
 python main.py --probe-quota EMAIL --probe-mode models
-# 判 free 是否用完（看 class=quota_exhausted；裸 429≠用尽）→ 详 docs/开发手册.md 步骤7
+# 判 free 是否用完：--probe-mode chat / quota（看 class=quota_exhausted；裸 429≠用尽）
 # python main.py --probe-quota EMAIL --probe-mode chat
 # python main.py --probe-quota all --probe-mode chat -j 2 --limit 30
 
@@ -152,8 +153,6 @@ python scripts/convert_cpa_sub2api.py cpa-to-sub cpa_export -o sub2api_export
 python scripts/convert_cpa_sub2api.py sub-to-cpa sub2api_export -o cpa_export --dry-run --limit 5
 ```
 
-契约见 [docs/export-plugin-contract.md](docs/export-plugin-contract.md)。
-
 ---
 
 ## 开发自检（pytest）
@@ -165,7 +164,7 @@ python -m pytest
 python -m pytest tests/test_ledger_export_boundary.py tests/test_refresh_ledger_regression.py
 ```
 
-`pytest.ini` 已固定 `testpaths=tests`。契约见 [docs/架构债.md](docs/架构债.md)。**不连外网。**
+`pytest.ini` 已固定 `testpaths=tests`。**不连外网。**
 
 ---
 
@@ -175,5 +174,4 @@ python -m pytest tests/test_ledger_export_boundary.py tests/test_refresh_ledger_
 - 进度行以 `#` 开头；默认安静批产 + 静态完成行。  
 - 密钥不入库、不贴聊天。  
 - 可选实验入口 `scripts/run.py` / pipeline_* 仍在树内，**日常以分步为准**。  
-
-更多排错：[docs/开发手册.md](docs/开发手册.md)。
+- 详细手册与对照代码仅在私有完整工作区，**不随本公开仓发布**。

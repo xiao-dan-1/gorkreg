@@ -9,6 +9,10 @@ requirements-client.txt
 scripts/run_client.py
 tests/test_client_*
 
+# private docs + reference slices (keep only in full private workspace)
+docs/
+ref/
+
 # local machine config (proxy / mail / cpa secrets) — use config.example.yaml
 config.yaml
 
