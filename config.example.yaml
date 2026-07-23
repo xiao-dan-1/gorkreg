@@ -1,0 +1,106 @@
+# 复制为 config.yaml 后按需修改。
+# 原则：密钥与站点凭据尽量只写 .env；yaml 可只留结构/非密钥默认。
+# config.yaml 已 gitignore，勿提交。
+# 本地 hop1：代码默认 7890；推荐只在 .env 写 LOCAL_PROXY=http://127.0.0.1:7890 覆盖。
+# 动态 IP 的 chain_via 勿用 10808。
+
+proxy:
+  default: ""  # empty → 代码默认 7890；.env LOCAL_PROXY / PROXY_DEFAULT 覆盖
+  pool: []
+  dynamic:
+    enabled: true
+    # 真实 template 只写 .env：PROXY_DYNAMIC_TEMPLATE=http://USER:PASS@host:port
+    template: ""
+    region: "US"
+    rotate_sid: true
+    sid_len: 8
+    sticky: 5
+    # hop1=Clash 7890；勿用 10808 作 chain_via
+    chain_via: ""  # empty → 代码默认 7890；.env LOCAL_PROXY / PROXY_CHAIN_VIA 覆盖
+
+browser:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+  sec_ch_ua: '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"'
+  sec_ch_ua_platform: '"Windows"'
+  sec_ch_ua_mobile: "?0"
+  impersonate: "chrome131"
+  accept_language: "zh-CN,zh;q=0.9"
+  request_timeout: 60
+
+protocol:
+  accounts_origin: "https://accounts.x.ai"
+  signup_url: "https://accounts.x.ai/sign-up"
+  turnstile_sitekey: "0x4AAAAAAAhr9JGVDZbrZOo0"
+  castle_pk: "pk_p8GGWvD3TmFJZRsX3BQcqAv9aFVispNz"
+  connect_es: "connect-es/2.1.1"
+
+# 打码插件：auto（Yes→Cap→2C→…）| yescaptcha | capsolver | twocaptcha
+# 优先级：CLI --captcha-backend > env CAPTCHA_BACKEND > 本字段 > auto
+# 密钥勿写明文：.env YESCAPTCHA_API_KEY / CAPSOLVER_API_KEY / TWOCAPTCHA_API_KEY
+captcha:
+  backend: "auto"
+
+yescaptcha:
+  api_key: ""           # → .env YESCAPTCHA_API_KEY
+  endpoint: ""          # 空=国际 api.yescaptcha.com；国内可填 https://cn.yescaptcha.com
+  premium: true
+  timeout: 180
+
+# 第三家：CapSolver（auto 链中间；CAPTCHA_BACKEND=capsolver 可点名）
+capsolver:
+  api_key: ""           # → .env CAPSOLVER_API_KEY
+  endpoint: ""          # 空=https://api.capsolver.com
+  timeout: 180
+
+twocaptcha:
+  api_key: ""           # → .env TWOCAPTCHA_API_KEY
+  endpoint: "https://2captcha.com"
+  timeout: 180
+
+browser_turnstile:
+  enabled: false
+  channel: "chrome"
+  headless: false
+  timeout: 120
+  local_solver_url: ""
+
+register:
+  given_name: "Jennifer"
+  family_name: "Mitchell"
+
+output:
+  dir: "output"
+
+mail:
+  sources:
+    - "mails.txt"
+
+# 密钥优先 .env：CLOUDMAIL_URL / ADMIN_EMAIL / PASSWORD / DOMAINS
+cloudmail:
+  url: ""
+  admin_email: ""
+  password: ""
+  domains: ""
+
+# 密钥优先 .env：CPA_BASE_URL / CPA_SECRET_KEY
+cpa:
+  base_url: "https://cpa.xdauv.xyz"
+  secret_key: ""
+  auth_dir: "cpa_export"
+
+# ---------- sub2api admin 远程导入（--sub2api-upload）----------
+# 与 UI「数据导入」同路径：POST /api/v1/admin/accounts/data
+# 密钥务必放 .env：SUB2API_BASE_URL / SUB2API_ADMIN_EMAIL / SUB2API_ADMIN_PASSWORD
+# 此处只留结构；admin_password 保持空字符串
+sub2api:
+  base_url: ""              # 例: https://your-sub2api.example
+  admin_email: ""
+  admin_password: ""        # 勿写明文；用 .env
+  export_dir: "sub2api_export"
+  skip_default_group_bind: true
+  timeout: 30
+
+# ---------- Cockpit Tools 本地出包（--export cockpit）----------
+# 无远程 upload；目录 cockpit_export/（grok-*.json + grok_accounts.json）
+cockpit:
+  export_dir: "cockpit_export"

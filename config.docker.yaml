@@ -1,0 +1,57 @@
+# 容器内覆盖：chain_via / default 走宿主机代理口
+# 用法：docker run -v ./config.docker.yaml:/app/config.yaml:ro ...
+# 或 compose 里把 config.yaml 换成本文件
+
+proxy:
+  default: "http://host.docker.internal:7890"
+  pool: []
+  dynamic:
+    enabled: true
+    # 下面 template 请换成你自己的辣椒账号；也可用挂载的 config.yaml
+    template: "http://USER-region-US-sid-XXXX-t-5:PASS@us.lajiaohttp.net:2000"
+    region: "US"
+    rotate_sid: true
+    sid_len: 8
+    sticky: 5
+    chain_via: "http://host.docker.internal:7890"
+
+browser:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+  sec_ch_ua: '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"'
+  sec_ch_ua_platform: '"Windows"'
+  sec_ch_ua_mobile: "?0"
+  impersonate: "chrome131"
+  accept_language: "zh-CN,zh;q=0.9"
+  request_timeout: 60
+
+protocol:
+  accounts_origin: "https://accounts.x.ai"
+  signup_url: "https://accounts.x.ai/sign-up"
+  turnstile_sitekey: "0x4AAAAAAAhr9JGVDZbrZOo0"
+  castle_pk: "pk_p8GGWvD3TmFJZRsX3BQcqAv9aFVispNz"
+  connect_es: "connect-es/2.1.1"
+
+yescaptcha:
+  api_key: ""
+  endpoint: ""
+  premium: true
+  timeout: 180
+
+twocaptcha:
+  api_key: ""
+  endpoint: "https://2captcha.com"
+  timeout: 180
+
+browser_turnstile:
+  enabled: false
+  channel: "chrome"
+  headless: true
+  timeout: 120
+  local_solver_url: ""
+
+register:
+  given_name: "Jennifer"
+  family_name: "Mitchell"
+
+output:
+  dir: "output"

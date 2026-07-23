@@ -1,0 +1,20 @@
+# 每行一条 Outlook 邮箱（# 开头为注释）
+# 格式: email----password----client_id----refresh_token
+# 用法:
+#   python main.py --batch mails.txt --region US -v
+#   python main.py --batch mails.txt --fixed-proxy -v
+#
+# 注意:
+# - 串行一号一 sid，默认号间间隔 3s（--batch-delay）
+# - 密钥/邮箱行勿提交 git（mails.txt 已在 .gitignore 建议名单）
+# - 2Captcha 放 .env 的 TWOCAPTCHA_API_KEY
+# 多源号池: config.yaml mail.sources 或 GROK_MAIL_SOURCES=a.txt,b.txt
+#   python main.py --mail-pool-status
+#   python main.py --exp-round --mail-sources mails.txt,mails_new.txt
+# 废号标记: data/mail_marks.json（gitignore）
+#   python main.py --mail-mark email --mail-mark-code mail_auth --mail-mark-reason "..."
+#   python main.py --mail-marks
+#   batch 默认跳过 dead/hold；--ignore-mail-marks 可强制跑
+
+# user1@outlook.com----pass----client_id----refresh_token
+# user2@outlook.com----pass----client_id----refresh_token

@@ -1,0 +1,35 @@
+# 本地开发/运维用 compose。密钥走 env_file，数据走 volume。
+#
+# 前提：宿主机 7890（注册链）与 10808（打码/mint）已开。
+# Linux 已加 extra_hosts → host.docker.internal。
+#
+# 用法示例：
+#   docker compose run --rm grokreg --env-check
+#   docker compose run --rm -v ./mails.txt:/app/mails.txt:ro grokreg \
+#     --batch mails.txt --region US --skip-existing -j 2 --mail-backend imap
+#   docker compose run --rm grokreg --auth-list
+#   docker compose run --rm grokreg --mint all -j 2 --no-probe
+
+services:
+  grokreg:
+    build: .
+    image: grokreg:local
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HTTPS_PROXY: http://host.docker.internal:10808
+      HTTP_PROXY: http://host.docker.internal:10808
+      NO_PROXY: localhost,127.0.0.1
+    volumes:
+      - ./output:/app/output
+      - ./cpa_export:/app/cpa_export
+      - ./data:/data
+      # 默认挂宿主机 config；容器内访问本机代理请改 chain_via 为 host.docker.internal
+      # 或：- ./config.docker.yaml:/app/config.yaml:ro
+      - ./config.yaml:/app/config.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["python", "main.py"]
+    command: ["--env-check"]
+    restart: "no"

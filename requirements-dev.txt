@@ -1,0 +1,3 @@
+# Dev / CI only (protocol CLI — no Web client in this public tree)
+-r requirements.txt
+pytest>=7.0

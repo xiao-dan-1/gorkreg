@@ -1,0 +1,4 @@
+# 可选：仅 --browser-turnstile / browser_turnstile.enabled 需要
+# 安装后还需: playwright install chromium
+-r requirements.txt
+playwright>=1.40.0

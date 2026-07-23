@@ -1,0 +1,3 @@
+# 协议主路径（产号 / mint / refresh / probe / export / upload）
+curl_cffi>=0.7.0
+PyYAML>=6.0

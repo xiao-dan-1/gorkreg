@@ -1,0 +1,84 @@
+# secrets & local env
+.env
+.env.*
+!.env.example
+
+# private Web console (GrokX) — not shipped in public gorkreg tree
+client/
+requirements-client.txt
+scripts/run_client.py
+tests/test_client_*
+
+# local machine config (proxy / mail / cpa secrets) — use config.example.yaml
+config.yaml
+
+# runtime / credentials
+output/
+cpa_export/
+sub2api_export/
+cockpit_export/
+auth.json
+auth.json.tmp
+sso_roster.txt
+sso_roster.txt.bak*
+mails.txt
+mails_new.txt
+mails_*.txt
+account_*.json
+*.jsonl
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# bulky / local-only
+*.har
+资料/
+data/
+ref/**/__pycache__/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Hermes local plans / session notes (not product source)
+.hermes/
+
+# ad-hoc / temp at repo root
+_alias_*
+_e2e_*
+_tmp_*
+_batch_*
+_cpa_*
+_upload_*
+.claude/
+.superpowers/
+.worktrees/
+
+# release artifacts
+dist/
+
+# test
+.pytest_cache/
+
+# ad-hoc session logs at repo root (prefer output/session_logs/)
+/*.log
+/stress_*.log
+/prod_*.log
+/reg_*.log
+/mint_*.log
+
+# split backups
+*.bak_split
+grokreg/cpa.py.bak_split
+
+# auth pool cross-process lock
+auth.json.lock
+*.json.lock
+
+# local backups (not product)
+bakup/
