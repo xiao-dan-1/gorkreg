@@ -82,9 +82,9 @@ def test_join_prefetch_respects_budget(monkeypatch):
     )
     assert tok == "sync-token"
     assert calls["sync"] == 1
-    assert calls["cancel"] == 1
+    # over-budget: wait paid task first (anti double-pay), then sync; reason ends with _wait
     assert meta.get("prefetch") is False
-    assert meta.get("reason") == "join_budget"
+    assert meta.get("reason") in {"join_budget", "join_budget_wait"}
 
 
 def test_join_prefetch_timeout_falls_back_to_sync():
@@ -112,7 +112,14 @@ def test_join_prefetch_timeout_falls_back_to_sync():
     )
     assert tok == "sync-tok"
     assert calls["sync"] == 1
-    assert meta.get("reason") in {"join_timeout", "prefetch_error", "join_budget"}
+    # join timeout also waits paid task before sync (reason may be *_wait)
+    assert meta.get("reason") in {
+        "join_timeout",
+        "join_timeout_wait",
+        "prefetch_error",
+        "join_budget",
+        "join_budget_wait",
+    }
 
 
 def test_prewarm_retries_once(monkeypatch):
