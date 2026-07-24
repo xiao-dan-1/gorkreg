@@ -1,7 +1,9 @@
 # 本地开发/运维用 compose。密钥走 env_file，数据走 volume。
 #
-# 前提：宿主机 7890（注册链）与 10808（打码/mint）已开。
+# 前提：宿主机代理已开（注册链 hop1 常用 7890；系统代理示例 10808 仅容器默认 env）。
 # Linux 已加 extra_hosts → host.docker.internal。
+#
+# 首次：cp .env.example .env && 填密钥；可选 cp config.docker.yaml config.yaml
 #
 # 用法示例：
 #   docker compose run --rm grokreg --env-check
@@ -25,9 +27,8 @@ services:
       - ./output:/app/output
       - ./cpa_export:/app/cpa_export
       - ./data:/data
-      # 默认挂宿主机 config；容器内访问本机代理请改 chain_via 为 host.docker.internal
-      # 或：- ./config.docker.yaml:/app/config.yaml:ro
-      - ./config.yaml:/app/config.yaml:ro
+      # 可选：宿主机 config；不存在时用镜像内 config.docker.yaml
+      - ./config.docker.yaml:/app/config.yaml:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     entrypoint: ["python", "main.py"]

@@ -18,7 +18,10 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY main.py /app/main.py
-COPY config.yaml /app/config.yaml
+COPY config.example.yaml /app/config.example.yaml
+COPY config.docker.yaml /app/config.docker.yaml
+# 默认用 docker 专用样例（host.docker.internal）；可挂载覆盖
+COPY config.docker.yaml /app/config.yaml
 COPY .env.example /app/.env.example
 COPY grokreg /app/grokreg
 
