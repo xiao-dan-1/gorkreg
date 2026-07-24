@@ -3,19 +3,24 @@
 # 前提：宿主机代理已开（注册链 hop1 常用 7890；系统代理示例 10808 仅容器默认 env）。
 # Linux 已加 extra_hosts → host.docker.internal。
 #
-# 首次：cp .env.example .env && 填密钥；可选 cp config.docker.yaml config.yaml
+# 首次：cp .env.example .env && 填密钥
 #
-# 用法示例：
-#   docker compose run --rm grokreg --env-check
-#   docker compose run --rm -v ./mails.txt:/app/mails.txt:ro grokreg \
-#     --batch mails.txt --region US --skip-existing -j 2 --mail-backend imap
-#   docker compose run --rm grokreg --auth-list
-#   docker compose run --rm grokreg --mint all -j 2 --no-probe
+# 常驻（Docker Desktop 可见，默认端口 11451）：
+#   docker compose up -d
+#   浏览器 http://127.0.0.1:11451/
+#   改端口：GROKREG_PORT=12345 docker compose up -d
+#
+# 一次性 CLI（覆盖 entrypoint）：
+#   docker compose run --rm --entrypoint python grokreg main.py --env-check
+#   docker compose run --rm --entrypoint python grokreg main.py --check-chain
+#   docker compose run --rm --entrypoint python -v ./mails.txt:/app/mails.txt:ro grokreg \
+#     main.py --batch mails.txt --region US -j 2
 
 services:
   grokreg:
     build: .
     image: grokreg:local
+    container_name: gorkreg
     env_file:
       - path: .env
         required: false
@@ -23,14 +28,44 @@ services:
       HTTPS_PROXY: http://host.docker.internal:10808
       HTTP_PROXY: http://host.docker.internal:10808
       NO_PROXY: localhost,127.0.0.1
+      GROKREG_PORT: ${GROKREG_PORT:-11451}
+    ports:
+      # 默认 11451；宿主机改端口：GROKREG_PORT=xxxx docker compose up -d
+      - "${GROKREG_PORT:-11451}:11451"
     volumes:
       - ./output:/app/output
       - ./cpa_export:/app/cpa_export
       - ./data:/data
-      # 可选：宿主机 config；不存在时用镜像内 config.docker.yaml
       - ./config.docker.yaml:/app/config.yaml:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    entrypoint: ["python", "main.py"]
-    command: ["--env-check"]
-    restart: "no"
+    # 常驻健康页（CLI 本身无 HTTP 服务；此进程仅用于占端口 + Desktop 可见）
+    entrypoint: ["python", "-c"]
+    command:
+      - |
+        import os
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        port = int(os.environ.get("GROKREG_PORT", "11451"))
+        # 容器内固定听 11451，映射由 compose ports 控制
+        listen = 11451
+
+        class H(BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = (
+                    "gorkreg docker ok\n"
+                    f"host_port={port}\n"
+                    "cli: docker compose run --rm --entrypoint python grokreg main.py --env-check\n"
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, fmt, *args):
+                pass
+
+        print(f"gorkreg health on 0.0.0.0:{listen} (host map {port})", flush=True)
+        HTTPServer(("0.0.0.0", listen), H).serve_forever()
+    restart: unless-stopped
