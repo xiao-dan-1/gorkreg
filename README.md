@@ -1,68 +1,74 @@
-# gorkreg · Grok 纯协议注册
+# gorkreg
 
-纯协议（无浏览器主路径）产号 → SSO → device-code mint → `auth.json` 账本 → 按需 export/upload。  
-**Python 包目录仍为 `grokreg/`**（import 名不变）；本仓库公开名 **gorkreg**。
+**Grok / xAI 纯协议注册与凭证运维 CLI**
 
-**日常：分步运维**（产号 → mint → probe/refresh → 按需 export/upload）。  
-密钥只放 **`.env`**，勿提交。CLI 与 `--help` 为准。
+不依赖浏览器主路径：注册拿 SSO → device-code mint 入账 → refresh / probe → 按需 export / upload。  
+仓库名 **gorkreg**；Python 包目录 **`grokreg/`**（`import grokreg`）。
 
-> 本公开树 **不含**：Web 控制台（GrokX / `client/`）、详细运维文档（`docs/`）、对照开源切片（`ref/`）。  
-> 仅协议 CLI + 离线测试 + 样例配置。
-
----
-
-## 介绍
-
-| 阶段 | 做什么 | 真源 |
-|------|--------|------|
-| 注册 | CloudMail 批产，拿 SSO | **SSO 花名册** `sso_roster.txt`（mint 索引）+ `output/` 证据 |
-| mint | SSO → RT/AT | **`auth.json` 账本** |
-| probe / refresh | 探活 / 刷 AT | **`auth.json` only** |
-| export | 出 CPA / sub2api / Cockpit 包 | `cpa_export/` · `sub2api_export/` · `cockpit_export/` |
-| upload | 推远端 | CLIProxy / sub2api |
-
-**分层：** mint / remint / refresh / probe **不依赖** `cpa_export`；xAI / Cockpit pack 文件只在 export/upload。
-
-> 导出：日常 `python main.py --export cpa`（≡ `cpa_files` / `cliproxy` 别名）。目录 `cpa_export/`。上传 `--cpa-upload`。env：`CPA_BASE_URL` / `CPA_SECRET_KEY` / `CPA_AUTH_DIR`。
-> Cockpit Tools：`python main.py --export cockpit` → `cockpit_export/grok-*.json` + `grok_accounts.json`。
-> pack 实现：`grokreg.backends.export.xai_pack` / `cockpit`（非 OAuth 协议模块）。
-
-| 配置要点 | 值 |
-|----------|-----|
-| 注册 hop1 | `LOCAL_PROXY=http://127.0.0.1:7890` |
-| 动态住宅 | `PROXY_DYNAMIC_TEMPLATE=...`（可无 `http://`） |
-| 打码 | `YESCAPTCHA_API_KEY` |
+本公开树只含协议 CLI、离线测试与样例配置。  
+**不含** Web 控制台、详细运维手册、对照开源切片、密钥与号池数据。
 
 ---
 
-## 配置
+## 流程
 
-```bash
-cd /path/to/gorkreg
-python -m pip install -r requirements.txt
-# 可选浏览器打码（非日常）: pip install -r requirements-browser.txt && playwright install chromium
-cp config.example.yaml config.yaml   # Windows: copy config.example.yaml config.yaml
-cp .env.example .env
+```text
+邮箱/CloudMail
+    → 注册（scrape → 验证码 → Turnstile → create → SSO）
+    → sso_roster.txt          # mint 索引
+    → mint（device-code OAuth）
+    → auth.json               # 凭证真源
+    → refresh / probe
+    → 可选 --export cpa|sub2api|cockpit → 上传
 ```
 
-**.env 最少：**
+| 阶段 | 真源 | 说明 |
+|------|------|------|
+| 注册成功 | `sso_roster.txt` + `output/accounts/` | 有 SSO 才算过 |
+| 凭证 | **`auth.json` only** | mint / refresh / probe / summary 只认账本 |
+| 出包 | `cpa_export/` 等 | **按需** export；不进协议主路径 |
+
+---
+
+## 要求
+
+- Python 3.11+
+- 本机代理（Clash 等）作 hop1，默认 `127.0.0.1:7890`（可用 `LOCAL_PROXY` 改）
+- 动态住宅代理模板（链式：本机 hop1 → 上游）
+- 打码：CapSolver / YesCaptcha / 2Captcha（`CAPTCHA_BACKEND`）
+- 可选：CloudMail 自建域、CLIProxy / sub2api 上传凭据
+
+密钥只写 **`.env`**，勿提交。
+
+---
+
+## 安装
+
+```bash
+git clone git@github.com:xiao-dan-1/gorkreg.git
+cd gorkreg
+python -m pip install -r requirements.txt
+cp .env.example .env
+cp config.example.yaml config.yaml   # Windows: copy ...
+```
+
+编辑 `.env`（最少）：
 
 ```env
-YESCAPTCHA_API_KEY=...
-LOCAL_PROXY=http://127.0.0.1:7890
-# PROXY_DYNAMIC_TEMPLATE=USER-region-US-sid-XXXX-t-5:PASS@host:2000
+CAPTCHA_BACKEND=capsolver
+CAPSOLVER_API_KEY=...
 
+LOCAL_PROXY=http://127.0.0.1:7890
+PROXY_DYNAMIC_TEMPLATE=USER-region-US-sid-XXXX-t-5:PASS@host:port
+
+# CloudMail 批产时
 CLOUDMAIL_URL=...
 CLOUDMAIL_ADMIN_EMAIL=...
 CLOUDMAIL_PASSWORD=...
 CLOUDMAIL_DOMAINS=...
-
-# CLIProxy 上传时
-# CPA_BASE_URL=...
-# CPA_SECRET_KEY=...
 ```
 
-一般**不要**设 `HTTPS_PROXY=10808`。密钥用 `.env`，yaml 可留空壳。
+`config.yaml` 可空壳；非空 env **只覆盖内存，不写回文件**。
 
 ---
 
@@ -73,105 +79,172 @@ python main.py --env-check
 python main.py --check-chain
 ```
 
-期望：`ready_for_register: yes`；proxy **7890**；链检查 hop1=7890。
+期望：
+
+- `ready_for_register: yes`（打码有余额）
+- `ready_for_mint: yes`（`mint.proxy` = `LOCAL_PROXY`）
+- `check-chain: OK`，hop1 为本机代理口，嵌套 CONNECT 通
+
+**不要**用 `10808`（常见 v2rayN）当注册链 `chain_via`：第二层 CONNECT 易黑洞。  
+系统 `HTTP(S)_PROXY` 默认不必设。
 
 ---
 
-## 日常分步运维
+## 日常命令
+
+### 1. 产号（SSO）
 
 ```bash
-# 1) 产号（仅注册；默认 proxy 类失败多试 1 次）
-python scripts/prod_cloudmail_batch.py -n 4 -j 2 --ascii-log
-# 关闭重试: --proxy-retries 0
+# CloudMail 批产（推荐）
+CAPTCHA_BACKEND=capsolver python scripts/prod_cloudmail_batch.py -n 20 -j 6 --account-timeout 90 --ascii-log
 
-# 2) 入账（缺的才 mint；--limit 优先最新 SSO；mint 易限流，建议 -j 1）
-python main.py --mint all --mint-missing --limit 4 --no-probe -j 1 --ascii-log
+# 单号
+python main.py --register-cloudmail -v
 
-# 3) 探活（读 auth.json，不依赖 pack 文件；单邮箱，勿逗号列表）
-python main.py --probe-quota EMAIL --probe-mode models
-# 判 free 是否用完：--probe-mode chat / quota（看 class=quota_exhausted；裸 429≠用尽）
-# python main.py --probe-quota EMAIL --probe-mode chat
-# python main.py --probe-quota all --probe-mode chat -j 2 --limit 30
-
-# 4) 保活
-python main.py --refresh all --needs-refresh-only --remint-on-revoke --no-probe -j 8
-
-# 5) 按需出包 / 上传（--export cpa ≡ cpa_files；目录 cpa_export/）
-python main.py --export cpa
-python main.py --export cockpit --export-only EMAIL   # Cockpit Tools 本地导入
-python main.py --cpa-upload all --cpa-missing -j 20
+# 名单文件（Outlook 四段线等）
+python main.py --batch mails.txt --region US -j 2 --ascii-log
 ```
 
-| 参数 | 含义 |
+| 建议 | 说明 |
 |------|------|
-| `-n` / `-j` | 批产个数 / 并发 |
-| `--ascii-log` | cmd 友好图标 |
-| `--proxy-retries N` | 批产网络/proxy 失败额外重试（默认 1） |
-| `--mint-missing` | 只 mint 账本没有的号 |
-| `--limit N` | mint/refresh/probe 等截断；mint 时 **最新优先** |
-| `--dry-run` | 批产只演日志 |
+| 稳产 | `j=2～4` |
+| 冲量 | `j=6～8` |
+| 千号长跑 | **不要默认 j=12** |
+| KPI | ok% + 成功号耗时；总 thr 易被 1～2 慢号拖死 |
 
-测日志（不烧号）：
+成功会 append `sso_roster.txt`（`email----password----sso`）。
+
+### 2. Mint（入账）
 
 ```bash
-python scripts/prod_cloudmail_batch.py -n 4 -j 2 --ascii-log --dry-run
+# 只 mint 账本还没有的号（roster 有、auth 无）
+python main.py --mint all --mint-missing --no-probe -j 4 --ascii-log
+
+# 调试截断：最新 SSO 优先
+python main.py --mint all --mint-missing --limit 10 --no-probe -j 2 --ascii-log
 ```
 
----
+默认 **只写 `auth.json`**，不写 CPA 文件。要 pack：`--export` 或 `--mint-write-cpa`。
 
-## 号池维护
-
-> `sso_roster.txt` = **SSO 花名册 / mint 索引**（`email----password----sso`（含密码，供登录/核对））。`auth.json` 不存 SSO；`output/` 为注册证据（可滚动，非全量保证）。三落点不合并；产号后 `recover → mint-missing → sso-audit`。
->
-> 2 字段旧行用 `python main.py --migrate-sso-roster` 补密码（从 output/accounts 证据）。
-> account 证据目录：`output/accounts/`（`python main.py --migrate-account-evidence` 从根目录迁入）。
-
+### 3. 探活 / 保活
 
 ```bash
-# SSO 丢失时从 output/ 回填 sso_roster（缺的才 append；output 仅滚动证据）
-python main.py --recover-sso-roster --recover-dry-run
-python main.py --recover-sso-roster
-python main.py --sso-audit
+python main.py --summary
+python main.py --auth-status all --needs-refresh-only
 
-python main.py --auth-status all --needs-refresh-only --limit 20 --ascii-log
+python main.py --probe-quota all --probe-mode models -j 6
+python main.py --probe-quota EMAIL --probe-mode billing   # xAI 账期
+python main.py --probe-quota EMAIL --probe-mode chat      # 额度头
+
 python main.py --refresh all --needs-refresh-only --remint-on-revoke --no-probe -j 8
-python main.py --probe-quota all --probe-mode models -j 8 --limit 20
+```
+
+- AT ≈ **6h**；RT 吊销 → remint（需 SSO），勿死磕 refresh  
+- `models` 快检；`chat`/`quota` 才看额度语义  
+
+### 4. 导出 / 上传（可选）
+
+```bash
+python main.py --export cpa              # → cpa_export/（≡ cpa_files）
+python main.py --export sub2api
+python main.py --export cockpit
+
+python main.py --cpa-upload all --cpa-missing -j 20
+python main.py --sub2api-upload all --sub2api-on-exists overwrite
+```
+
+上传目标与密钥在 `.env`（`CPA_*` / `SUB2API_*`）。**未授权勿对生产乱传。**
+
+### 5. 号池巡检
+
+```bash
+python main.py --sso-audit
+# in_cli_not_auth → --mint all --mint-missing
+# output 有 SSO、roster 缺 → --recover-sso-roster（先 --recover-dry-run）
 ```
 
 ---
 
-## Pack 互转（CPA ↔ sub2api，旁路）
+## 代理架构（简）
 
-已有 `cpa_export/` 或 `sub2api_export/` 文件时，**不 mint / 不 upload / 不改 auth.json**：
-
-```bash
-# CPA → sub2api（一号一信封；--merge 合并导入包）
-python scripts/convert_cpa_sub2api.py cpa-to-sub cpa_export -o sub2api_export --dry-run --limit 5
-python scripts/convert_cpa_sub2api.py cpa-to-sub cpa_export -o sub2api_export
-
-# sub2api → CPA
-python scripts/convert_cpa_sub2api.py sub-to-cpa sub2api_export -o cpa_export --dry-run --limit 5
+```text
+curl_cffi → 127.0.0.1:LOCAL_PROXY
+         → CONNECT → 动态住宅（PROXY_DYNAMIC_TEMPLATE，每号随机 SID）
 ```
+
+- 注册 / mint / probe：同一 hop1（`LOCAL_PROXY`，默认 7890）  
+- 收码（Graph/IMAP）：默认 **直连**  
+- 批产默认 preflight：链不通则 **0 烧号退出**  
+
+临时换 mint 出口：`--mint-proxy URL`（不读已废弃的 `MINT_PROXY`）。
 
 ---
 
-## 开发自检（pytest）
+## 打码
 
-```bash
-python -m pip install -r requirements.txt
-python -m pytest
-# 或:
-python -m pytest tests/test_ledger_export_boundary.py tests/test_refresh_ledger_regression.py
+| `CAPTCHA_BACKEND` | 行为 |
+|-------------------|------|
+| `capsolver` | 仅 CapSolver（`AntiTurnstileTaskProxyLess`） |
+| `yescaptcha` | 仅 Yes |
+| `twocaptcha` | 仅 2C |
+| `auto` | Yes → Cap → 2C（余额 soft-skip） |
+
+优先级：**CLI > env > config > auto**。  
+空余额熔断；prefetch 超时会等已付费任务，降低双付。
+
+---
+
+## 项目结构（公开）
+
+```text
+main.py                 # 入口 → grokreg.cli
+grokreg/                # 协议 + ops + backends
+  pipeline/             # register_one
+  oauth/                # mint / refresh / probe
+  backends/             # mail · captcha · export
+  ops/                  # CLI 命令实现
+scripts/
+  prod_cloudmail_batch.py
+  recover_sso_failed.py
+  convert_cpa_sub2api.py
+  ...
+tests/                  # 离线契约测试（不连外网）
+.env.example
+config.example.yaml
+Dockerfile
 ```
 
-`pytest.ini` 已固定 `testpaths=tests`。**不连外网。**
+运行时本地生成（**gitignore**）：`.env`、`config.yaml`、`auth.json`、`sso_roster.txt`、`output/`、`cpa_export/` 等。
+
+---
+
+## 测试
+
+```bash
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
+```
+
+CI：`.github/workflows/pytest.yml`。
+
+---
+
+## 安全
+
+- 永不提交：`.env`、`auth.json`、`sso_roster.txt`、邮箱 RT、CPA secret  
+- `sso_roster` 含密码字段，仅本地保管  
+- Issue / 聊天勿贴 token  
+
+---
+
+## 许可
+
+[MIT](LICENSE)
 
 ---
 
 ## 说明
 
-- Access ≈ **6h**，靠 refresh；RT revoke → remint（需 SSO）。  
-- 进度行以 `#` 开头；默认安静批产 + 静态完成行。  
-- 密钥不入库、不贴聊天。  
-- 可选实验入口 `scripts/run.py` / pipeline_* 仍在树内，**日常以分步为准**。  
-- 详细手册与对照代码仅在私有完整工作区，**不随本公开仓发布**。
+- 包名 `grokreg` 与仓库名 `gorkreg` 并存属有意区分，import 勿改成 gorkreg。  
+- CLI 完整参数：`python main.py --help`。  
+- 更细的产线手册与对照代码不在本仓；以代码与本 README 为准。  
